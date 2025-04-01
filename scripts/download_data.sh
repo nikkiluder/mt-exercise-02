@@ -10,7 +10,6 @@ mkdir -p $data
 tools=$base/tools
 
 # link default training data for easier access
-
 mkdir -p $data/wikitext-2
 
 for corpus in train valid test; do
@@ -18,26 +17,27 @@ for corpus in train valid test; do
     ln -snf $absolute_path $data/wikitext-2/$corpus.txt
 done
 
-# download a different interesting data set!
+# Create directory for Interstellar script data
+mkdir -p $data/interstellar
+mkdir -p $data/interstellar/raw
 
-mkdir -p $data/grimm
+# Preprocess the script
+cat $data/interstellar/raw/script.txt | python $base/scripts/preprocess_raw.py > $data/interstellar/raw/script.cleaned.txt
 
-mkdir -p $data/grimm/raw
+# Tokenize, fix vocabulary upper bound
+cat $data/interstellar/raw/script.cleaned.txt | python $base/scripts/preprocess.py --vocab-size 5000 --tokenize --lang "en" --sent-tokenize > \
+    $data/interstellar/raw/script.preprocessed.txt
 
-wget https://www.gutenberg.org/files/52521/52521-0.txt
-mv 52521-0.txt $data/grimm/raw/tales.txt
+# Split into train, valid and test - adjusting splits for our dataset size
+# Count total lines
+total_lines=$(wc -l < $data/interstellar/raw/script.preprocessed.txt)
+valid_size=150
+test_size=150
+train_size=$((total_lines - valid_size - test_size))
 
-# preprocess slightly
+# Extract parts
+head -n $valid_size $data/interstellar/raw/script.preprocessed.txt > $data/interstellar/valid.txt
+tail -n $test_size $data/interstellar/raw/script.preprocessed.txt > $data/interstellar/test.txt
+head -n $((valid_size + train_size)) $data/interstellar/raw/script.preprocessed.txt | tail -n $train_size > $data/interstellar/train.txt
 
-cat $data/grimm/raw/tales.txt | python $base/scripts/preprocess_raw.py > $data/grimm/raw/tales.cleaned.txt
-
-# tokenize, fix vocabulary upper bound
-
-cat $data/grimm/raw/tales.cleaned.txt | python $base/scripts/preprocess.py --vocab-size 5000 --tokenize --lang "en" --sent-tokenize > \
-    $data/grimm/raw/tales.preprocessed.txt
-
-# split into train, valid and test
-
-head -n 440 $data/grimm/raw/tales.preprocessed.txt | tail -n 400 > $data/grimm/valid.txt
-head -n 840 $data/grimm/raw/tales.preprocessed.txt | tail -n 400 > $data/grimm/test.txt
-tail -n 3075 $data/grimm/raw/tales.preprocessed.txt | head -n 2955 > $data/grimm/train.txt
+echo "Data preparation complete. Train size: $train_size, Valid size: $valid_size, Test size: $test_size"
