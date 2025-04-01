@@ -41,4 +41,20 @@ Generate (sample) some text from a trained model with:
 
     ./scripts/generate.sh
 
+Dataset
 
+    Replaced default Wikitext-2 dataset with Interstellar movie script
+    Preprocessed script using custom tokenization
+    Split script into train, validation, and test sets
+
+Preprocessing Steps
+
+    Used preprocess_raw.py to clean raw script text
+    Applied tokenization with vocabulary limit of 5000 words
+    Handled script-specific preprocessing challenges
+
+Model Training
+
+    Trained on Interstellar script dataset
+    Used MPS backend for Apple Silicon acceleration
+    Resolved PyTorch model loading issues with weights_only=False
